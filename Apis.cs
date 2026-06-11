@@ -30,20 +30,28 @@ namespace DigitalKhata
         // ==================== DASHBOARD API ====================
         public static void ApiDashboard(System.Net.HttpListenerContext ctx)
         {
-            using (SqlConnection conn = new SqlConnection(Program.connStr))
+            try
             {
-                conn.Open();
-                int customers = (int)new SqlCommand("SELECT COUNT(*) FROM Customers", conn).ExecuteScalar();
-                decimal totalDebit = (decimal)new SqlCommand("SELECT ISNULL(SUM(Amount),0) FROM Debits", conn).ExecuteScalar();
-                decimal totalRec = (decimal)new SqlCommand("SELECT ISNULL(SUM(AmountReceived),0) FROM Recoveries", conn).ExecuteScalar();
-                decimal outstanding = (decimal)new SqlCommand("SELECT ISNULL(SUM(CurrentBalance),0) FROM Customers", conn).ExecuteScalar();
-                
-                Program.SendJson(ctx, new { 
-                    customers = customers,
-                    totalDebit = totalDebit,
-                    totalRecovery = totalRec,
-                    outstanding = outstanding
-                });
+                using (SqlConnection conn = new SqlConnection(Program.connStr))
+                {
+                    conn.Open();
+
+                    int customers = Convert.ToInt32(new SqlCommand("SELECT COUNT(*) FROM Customers", conn).ExecuteScalar());
+                    decimal totalDebit = Convert.ToDecimal(new SqlCommand("SELECT ISNULL(SUM(Amount),0) FROM Debits", conn).ExecuteScalar());
+                    decimal totalRec = Convert.ToDecimal(new SqlCommand("SELECT ISNULL(SUM(AmountReceived),0) FROM Recoveries", conn).ExecuteScalar());
+                    decimal outstanding = Convert.ToDecimal(new SqlCommand("SELECT ISNULL(SUM(CurrentBalance),0) FROM Customers", conn).ExecuteScalar());
+
+                    Program.SendJson(ctx, new {
+                        customers = customers,
+                        totalDebit = totalDebit,
+                        totalRecovery = totalRec,
+                        outstanding = outstanding
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Program.SendJson(ctx, new { error = ex.ToString() });
             }
         }
 

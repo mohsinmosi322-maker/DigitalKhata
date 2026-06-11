@@ -21,14 +21,14 @@ namespace DigitalKhata
             Console.WriteLine("===========================================");
             Console.WriteLine("   Digital Khata - Debit Recovery System   ");
             Console.WriteLine("===========================================\n");
-            
+
             if (!FindSqlServer())
             {
                 Console.WriteLine("\nSQL Server connection failed!");
                 Console.ReadLine();
                 return;
             }
-            
+
             InitDB();
             StartServer();
         }
@@ -56,7 +56,7 @@ namespace DigitalKhata
         static bool FindSqlServer()
         {
             Console.WriteLine("[1/3] Searching for SQL Server...");
-            
+
             string[] instances = { ".\\SQLEXPRESS", ".", "(local)", "localhost" };
             string errorMsg = "";
 
@@ -75,14 +75,14 @@ namespace DigitalKhata
             Console.Write("  (or press Enter for '.'): ");
             string input = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(input)) input = ".";
-            
+
             Console.Write("  Trying " + input + "... ");
             if (TryConnect(input, out errorMsg))
             {
                 Console.WriteLine("OK");
                 return true;
             }
-            
+
             Console.WriteLine("Failed: " + errorMsg);
             return false;
         }
@@ -91,7 +91,7 @@ namespace DigitalKhata
         {
             Console.WriteLine("\n[2/3] Creating Database Tables...");
             string masterConn = connStr.Replace("DigitalKhataDB", "master");
-            
+
             try
             {
                 using (SqlConnection conn = new SqlConnection(masterConn))
@@ -104,7 +104,7 @@ namespace DigitalKhata
                 using (SqlConnection conn = new SqlConnection(connStr))
                 {
                     conn.Open();
-                    
+
                     string sql = @"
                         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Users' and xtype='U')
                         CREATE TABLE Users (
@@ -172,7 +172,7 @@ namespace DigitalKhata
                         IF NOT EXISTS (SELECT * FROM Users WHERE Username='admin')
                         INSERT INTO Users (Username, Password, Role) VALUES ('admin', 'admin123', 'Admin');
                     ";
-                    
+
                     new SqlCommand(sql, conn).ExecuteNonQuery();
                     Console.WriteLine("  Database tables created successfully!");
                 }
@@ -190,10 +190,10 @@ namespace DigitalKhata
             Console.WriteLine("\n[3/3] Starting Web Server...");
             HttpListener listener = new HttpListener();
             listener.Prefixes.Add("http://localhost:8080/");
-            
-            try 
-            { 
-                listener.Start(); 
+
+            try
+            {
+                listener.Start();
                 Console.WriteLine("  Server: http://localhost:8080/");
                 Console.WriteLine("  Press Ctrl+C to stop\n");
                 Process.Start("http://localhost:8080/");
@@ -215,46 +215,49 @@ namespace DigitalKhata
 
         static void HandleRequest(HttpListenerContext ctx)
         {
-            try 
+            try
             {
                 string path = ctx.Request.Url.AbsolutePath;
-                
-                if (path == "/" || path == "/login") 
+
+                if (path == "/" || path == "/login")
                     ServeHtml(ctx, Pages.GetLoginPage());
-                else if (path == "/app") 
+                else if (path == "/app")
                     ServeHtml(ctx, Pages.GetAppPage());
-                else if (path == "/api/login" && ctx.Request.HttpMethod == "POST") 
+                // FIX: Added missing route for app.js — was 404ing before
+                else if (path == "/js/app.js")
+                    ServeJs(ctx, Pages.GetAppJs());
+                else if (path == "/api/login" && ctx.Request.HttpMethod == "POST")
                     Apis.ApiLogin(ctx);
-                else if (path == "/api/dashboard") 
+                else if (path == "/api/dashboard")
                     Apis.ApiDashboard(ctx);
-                else if (path == "/api/customers" && ctx.Request.HttpMethod == "GET") 
+                else if (path == "/api/customers" && ctx.Request.HttpMethod == "GET")
                     Apis.ApiGetCustomers(ctx);
-                else if (path == "/api/customers" && ctx.Request.HttpMethod == "POST") 
+                else if (path == "/api/customers" && ctx.Request.HttpMethod == "POST")
                     Apis.ApiAddCustomer(ctx);
-                else if (path == "/api/debits" && ctx.Request.HttpMethod == "GET") 
+                else if (path == "/api/debits" && ctx.Request.HttpMethod == "GET")
                     Apis.ApiGetDebits(ctx);
-                else if (path == "/api/debits" && ctx.Request.HttpMethod == "POST") 
+                else if (path == "/api/debits" && ctx.Request.HttpMethod == "POST")
                     Apis.ApiAddDebit(ctx);
-                else if (path == "/api/recoveries" && ctx.Request.HttpMethod == "GET") 
+                else if (path == "/api/recoveries" && ctx.Request.HttpMethod == "GET")
                     Apis.ApiGetRecoveries(ctx);
-                else if (path == "/api/recoveries" && ctx.Request.HttpMethod == "POST") 
+                else if (path == "/api/recoveries" && ctx.Request.HttpMethod == "POST")
                     Apis.ApiAddRecovery(ctx);
-                else if (path == "/api/ledger") 
+                else if (path == "/api/ledger")
                     Apis.ApiGetLedger(ctx);
-                else 
+                else
                     Serve404(ctx);
             }
-            catch (Exception ex) 
-            { 
-                Serve500(ctx, ex.Message); 
+            catch (Exception ex)
+            {
+                Serve500(ctx, ex.ToString());
             }
-            finally 
-            { 
+            finally
+            {
                 try { ctx.Response.OutputStream.Close(); } catch { }
             }
         }
 
-        static void ServeHtml(HttpListenerContext ctx, string html)
+        public static void ServeHtml(HttpListenerContext ctx, string html)
         {
             ctx.Response.ContentType = "text/html; charset=utf-8";
             byte[] buf = Encoding.UTF8.GetBytes(html);
@@ -262,7 +265,16 @@ namespace DigitalKhata
             ctx.Response.OutputStream.Write(buf, 0, buf.Length);
         }
 
-        static void SendJson(HttpListenerContext ctx, object data)
+        // FIX: Added JS serving method
+        public static void ServeJs(HttpListenerContext ctx, string js)
+        {
+            ctx.Response.ContentType = "application/javascript; charset=utf-8";
+            byte[] buf = Encoding.UTF8.GetBytes(js);
+            ctx.Response.ContentLength64 = buf.Length;
+            ctx.Response.OutputStream.Write(buf, 0, buf.Length);
+        }
+
+        public static void SendJson(HttpListenerContext ctx, object data)
         {
             string j = json.Serialize(data);
             ctx.Response.ContentType = "application/json; charset=utf-8";
@@ -271,16 +283,16 @@ namespace DigitalKhata
             ctx.Response.OutputStream.Write(buf, 0, buf.Length);
         }
 
-        static void Serve404(HttpListenerContext ctx) 
-        { 
-            ctx.Response.StatusCode = 404; 
-            ServeHtml(ctx, "<h1>404 Not Found</h1>"); 
+        static void Serve404(HttpListenerContext ctx)
+        {
+            ctx.Response.StatusCode = 404;
+            ServeHtml(ctx, "<h1>404 Not Found</h1>");
         }
-        
-        static void Serve500(HttpListenerContext ctx, string msg) 
-        { 
-            ctx.Response.StatusCode = 500; 
-            ServeHtml(ctx, "<h1>Error: " + msg + "</h1>"); 
+
+        static void Serve500(HttpListenerContext ctx, string msg)
+        {
+            ctx.Response.StatusCode = 500;
+            ServeHtml(ctx, "<h1>Server Error</h1><p>" + msg + "</p>");
         }
     }
 }
