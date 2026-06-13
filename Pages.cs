@@ -1,370 +1,189 @@
 using System;
 
-namespace DigitalKhata
+namespace Khatify
 {
     class Pages
     {
-        // ==================== LOGIN PAGE ====================
         public static string GetLoginPage()
         {
-            return @"<!DOCTYPE html>
-<html>
+            return @"
+<!DOCTYPE html>
+<html lang=""en"">
 <head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Login - Digital Khata</title>
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
+    <link href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"" rel=""stylesheet"">
+    <link href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"" rel=""stylesheet"">
     <style>
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 400px; }
+        :root { --primary-dark: #121358; --accent: #36ADA3; }
+        body { background: linear-gradient(135deg, #121358 0%, #232F72 100%); height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', sans-serif; }
+        .login-card { background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 100%; max-width: 420px; overflow: hidden; }
+        .login-header { background: var(--primary-dark); color: #fff; padding: 35px; text-align: center; }
+        .login-header i { font-size: 3rem; color: var(--accent); margin-bottom: 10px; }
+        .login-header h3 { margin: 0; font-weight: bold; }
+        .login-header span { color: var(--accent); }
+        .login-body { padding: 35px; }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 0.25rem rgba(54, 173, 163, 0.25); }
+        .btn-login { background: var(--accent); color: #fff; font-weight: bold; border: none; padding: 12px; border-radius: 8px; width: 100%; }
+        .btn-login:hover { background: #2b8a82; color: #fff; }
+        .input-group-text { background: #f8f9fa; border-right: 0; }
+        .input-group .form-control { border-left: 0; }
     </style>
 </head>
 <body>
-    <div class='login-box'>
-        <h2 class='text-center mb-4'>&#x1F4CA; Digital Khata</h2>
-        <form id='loginForm'>
-            <div class='mb-3'>
-                <label>Username</label>
-                <input type='text' id='username' class='form-control' required>
-            </div>
-            <div class='mb-3'>
-                <label>Password</label>
-                <input type='password' id='password' class='form-control' required>
-            </div>
-            <button type='submit' class='btn btn-primary w-100'>Login</button>
-            <div id='msg' class='mt-3 text-danger text-center'></div>
-        </form>
+    <div class=""login-card"">
+        <div class=""login-header"">
+            <i class=""fa-solid fa-wallet""></i>
+            <h3>Digital <span>Khata</span></h3>
+            <p class=""mb-0 mt-2 opacity-75"">Debit & Recovery Management System</p>
+        </div>
+        <div class=""login-body"">
+            <form onsubmit=""handleLogin(event)"">
+                <div class=""mb-3"">
+                    <label class=""form-label fw-bold""><i class=""fa-solid fa-user me-1""></i> Username</label>
+                    <div class=""input-group"">
+                        <span class=""input-group-text""><i class=""fa-solid fa-user""></i></span>
+                        <input type=""text"" id=""username"" class=""form-control form-control-lg"" required>
+                    </div>
+                </div>
+                <div class=""mb-4"">
+                    <label class=""form-label fw-bold""><i class=""fa-solid fa-lock me-1""></i> Password</label>
+                    <div class=""input-group"">
+                        <span class=""input-group-text""><i class=""fa-solid fa-lock""></i></span>
+                        <input type=""password"" id=""password"" class=""form-control form-control-lg"" required>
+                    </div>
+                </div>
+                <button type=""submit"" class=""btn-login""><i class=""fa-solid fa-right-to-bracket me-2""></i>Login to Dashboard</button>
+            </form>
+        </div>
     </div>
     <script>
-        document.getElementById('loginForm').onsubmit = async function(e) {
+        function handleLogin(e) {
             e.preventDefault();
-            var res = await fetch('/api/login', {
+            fetch('/api/login', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    username: document.getElementById('username').value,
-                    password: document.getElementById('password').value
-                })
+                body: JSON.stringify({ username: document.getElementById('username').value, password: document.getElementById('password').value })
+            }).then(r => r.json()).then(d => {
+                if (d.success) { 
+                    localStorage.setItem('dk_role', d.role);
+                    localStorage.setItem('dk_user', document.getElementById('username').value);
+                    window.location.href = '/app'; 
+                } else { alert(d.message); }
             });
-            var data = await res.json();
-            if (data.success) window.location.href = '/app';
-            else document.getElementById('msg').innerText = data.message;
-        };
+        }
     </script>
 </body>
 </html>";
         }
 
-        // ==================== MAIN APP PAGE ====================
         public static string GetAppPage()
         {
-            // FIX: Dashboard HTML is now injected at page load so statCustomers/statDebit/etc.
-            //      elements exist in the DOM when loadDashboard() runs fetch callbacks.
-            //      Previously the content div was empty on load, so getElementById returned null.
-            return @"<!DOCTYPE html>
-<html>
+            return @"
+<!DOCTYPE html>
+<html lang=""en"">
 <head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Digital Khata</title>
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css' rel='stylesheet'>
-    <link href='https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css' rel='stylesheet'>
+    <link href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"" rel=""stylesheet"">
+    <link href=""https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css"" rel=""stylesheet"">
+    <link href=""https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"" rel=""stylesheet"">
+    <script src=""https://code.jquery.com/jquery-3.6.0.min.js""></script>
+    <script src=""https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js""></script>
+    <script src=""https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js""></script>
+    <script src=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js""></script>
     <style>
-        .sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: #1a1d29; color: white; padding: 20px; overflow-y: auto; }
-        .main { margin-left: 260px; padding: 20px; background: #f5f7fa; min-height: 100vh; }
-        .nav-item { margin-bottom: 5px; }
-        .nav-link { color: #a0aec0; cursor: pointer; padding: 12px 15px; border-radius: 8px; }
-        .nav-link:hover, .nav-link.active { background: #2d3748; color: white; }
-        .stat-card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .btn-primary { background: #4f46e5; border: none; }
-        .btn-primary:hover { background: #4338ca; }
+        :root {
+            --primary-dark: #121358;
+            --primary-med: #232F72;
+            --primary-light: #2F578A;
+            --accent: #36ADA3;
+            --bg-light: #F4F7F6;
+            --text-dark: #121358;
+        }
+        body { background-color: var(--bg-light); color: var(--text-dark); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        .navbar { background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary-med) 100%) !important; box-shadow: 0 4px 15px rgba(18, 19, 88, 0.25); padding: 12px 20px; }
+        .navbar-brand { color: #fff !important; font-weight: bold; font-size: 1.4rem; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .navbar-brand i { color: var(--accent); font-size: 1.6rem; }
+        .navbar-brand span { color: var(--accent); }
+        .nav-link { color: rgba(255,255,255,0.85) !important; font-weight: 500; margin: 0 3px; border-radius: 8px; transition: all 0.3s; display: flex; align-items: center; gap: 6px; padding: 8px 14px !important; }
+        .nav-link i { font-size: 0.95rem; }
+        .nav-link:hover { color: #fff !important; background-color: rgba(255,255,255,0.1); }
+        .nav-link.active { background-color: var(--accent) !important; color: #fff !important; box-shadow: 0 2px 8px rgba(54, 173, 163, 0.4); }
+        .nav-link.admin-link { background-color: rgba(255, 193, 7, 0.15); border: 1px solid rgba(255, 193, 7, 0.4); }
+        .nav-link.admin-link:hover { background-color: rgba(255, 193, 7, 0.3); }
+        .nav-link.admin-link.active { background-color: #ffc107 !important; color: var(--primary-dark) !important; }
+        
+        .btn-primary { background-color: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+        .btn-primary:hover { background-color: #2b8a82; border-color: #2b8a82; }
+        .btn-outline-light { border-color: var(--accent); color: var(--accent); }
+        .btn-outline-light:hover { background-color: var(--accent); color: #fff; }
+        
+        .card { border: none; box-shadow: 0 4px 15px rgba(18, 19, 88, 0.06); border-radius: 12px; overflow: hidden; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        .card-header { background: linear-gradient(90deg, var(--primary-med), var(--primary-light)); color: #fff; border-bottom: none; font-weight: 600; padding: 15px 20px; display: flex; align-items: center; gap: 10px; }
+        .card-header i { font-size: 1.1rem; }
+        .card-body { padding: 20px; }
+        .table { color: var(--text-dark); }
+        .table thead { background-color: var(--primary-dark); color: #fff; }
+        .table thead th { border: none; font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: 0.5px; padding: 12px; }
+        .table tbody tr:hover { background-color: rgba(54, 173, 163, 0.05); }
+        .table td { padding: 12px; vertical-align: middle; }
+        
+        .stat-card { border-left: 5px solid var(--accent); background: #fff; }
+        .stat-card h2 { color: var(--primary-dark); font-weight: 700; font-size: 1.8rem; }
+        .stat-card h5 { color: var(--primary-light); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .stat-card .stat-icon { font-size: 2rem; opacity: 0.3; position: absolute; right: 20px; top: 20px; }
+        
+        .modal-header { background: linear-gradient(90deg, var(--primary-dark), var(--primary-med)); color: #fff; }
+        .modal-header .btn-close { filter: invert(1); }
+        .form-control:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 0.25rem rgba(54, 173, 163, 0.25); }
+        .form-label { font-weight: 600; color: var(--primary-med); }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--accent) !important; color: #fff !important; border: 1px solid var(--accent) !important; border-radius: 5px; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: var(--primary-light) !important; color: #fff !important; border: 1px solid var(--primary-light) !important; border-radius: 5px; }
+        
+        .admin-section { background: #fff; border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(18, 19, 88, 0.06); }
+        .admin-section h5 { color: var(--primary-dark); font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+        .admin-section h5 i { color: var(--accent); }
+        
+        .user-badge { background: var(--primary-med); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; }
+        .user-badge i { color: var(--accent); }
+        
+        .page-title { color: var(--primary-dark); font-weight: 700; display: flex; align-items: center; gap: 12px; margin-bottom: 25px; }
+        .page-title i { color: var(--accent); }
     </style>
 </head>
 <body>
-    <div class='sidebar'>
-        <h3 class='mb-4'>&#x1F4CA; Digital Khata</h3>
-        <hr>
-        <div class='nav flex-column'>
-            <div class='nav-item'><a class='nav-link active' onclick='loadPage(""dashboard"", this)'>&#x1F4C8; Dashboard</a></div>
-            <div class='nav-item'><a class='nav-link' onclick='loadPage(""customers"", this)'>&#x1F465; Customers</a></div>
-            <div class='nav-item'><a class='nav-link' onclick='loadPage(""debits"", this)'>&#x1F4B0; Debit Entries</a></div>
-            <div class='nav-item'><a class='nav-link' onclick='loadPage(""recoveries"", this)'>&#x1F4B5; Recovery Entries</a></div>
-        </div>
-        <hr>
-        <a href='/login' class='btn btn-danger w-100'>Logout</a>
-    </div>
-
-    <div class='main' id='content'>
-        <!-- FIX: Dashboard HTML pre-loaded here so stat element IDs exist on first fetch -->
-        <div class='container-fluid'>
-            <h3 class='mb-4'>&#x1F4C8; Dashboard</h3>
-            <div class='row g-3'>
-                <div class='col-md-3'>
-                    <div class='card stat-card bg-primary text-white p-3'>
-                        <h6>Total Customers</h6>
-                        <h2 id='statCustomers'>...</h2>
-                    </div>
-                </div>
-                <div class='col-md-3'>
-                    <div class='card stat-card bg-danger text-white p-3'>
-                        <h6>Total Debit</h6>
-                        <h2 id='statDebit'>...</h2>
-                    </div>
-                </div>
-                <div class='col-md-3'>
-                    <div class='card stat-card bg-success text-white p-3'>
-                        <h6>Total Recovery</h6>
-                        <h2 id='statRecovery'>...</h2>
-                    </div>
-                </div>
-                <div class='col-md-3'>
-                    <div class='card stat-card bg-warning text-dark p-3'>
-                        <h6>Outstanding</h6>
-                        <h2 id='statOutstanding'>...</h2>
-                    </div>
+    <nav class=""navbar navbar-expand-lg"">
+        <div class=""container-fluid"">
+            <a class=""navbar-brand"" href=""#""><i class=""fa-solid fa-wallet""></i> Digital <span>Khata</span></a>
+            <button class=""navbar-toggler"" type=""button"" data-bs-toggle=""collapse"" data-bs-target=""#navbarNav"">
+                <span class=""navbar-toggler-icon""></span>
+            </button>
+            <div class=""collapse navbar-collapse"" id=""navbarNav"">
+                <ul class=""navbar-nav me-auto mb-2 mb-lg-0"">
+                    <li class=""nav-item""><a class=""nav-link active"" href=""#"" onclick=""loadPage('dashboard', this)""><i class=""fa-solid fa-chart-line""></i> Dashboard</a></li>
+                    <li class=""nav-item""><a class=""nav-link"" href=""#"" onclick=""loadPage('customers', this)""><i class=""fa-solid fa-users""></i> Active Khatas</a></li>
+                    <li class=""nav-item""><a class=""nav-link"" href=""#"" onclick=""loadPage('debits', this)""><i class=""fa-solid fa-file-invoice-dollar""></i> Debit Entries</a></li>
+                    <li class=""nav-item""><a class=""nav-link"" href=""#"" onclick=""loadPage('recoveries', this)""><i class=""fa-solid fa-hand-holding-dollar""></i> Recovery Entries</a></li>
+                    <li class=""nav-item""><a class=""nav-link"" href=""#"" onclick=""loadPage('closed', this)""><i class=""fa-solid fa-lock""></i> Closed Khatas</a></li>
+                    <li class=""nav-item"" id=""adminMenuItem"" style=""display:none;""><a class=""nav-link admin-link"" href=""#"" onclick=""loadPage('admin', this)""><i class=""fa-solid fa-user-shield""></i> Admin Panel</a></li>
+                </ul>
+                <div class=""d-flex align-items-center gap-2"">
+                    <span class=""user-badge"" id=""userBadge""><i class=""fa-solid fa-user-circle""></i> <span id=""userName"">User</span></span>
+                    <a href=""/login"" class=""btn btn-outline-light btn-sm"" onclick=""localStorage.clear()""><i class=""fa-solid fa-right-from-bracket me-1""></i>Logout</a>
                 </div>
             </div>
         </div>
-    </div>
-
-    <script src='https://code.jquery.com/jquery-3.7.0.min.js'></script>
-    <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js'></script>
-    <script src='https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'></script>
-    <script src='https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js'></script>
-    <!-- FIX: Route /js/app.js is now handled by the server -->
-    <script src='/js/app.js'></script>
+    </nav>
+    <div id=""content"" class=""p-4""></div>
+    <script src=""/js/app.js""></script>
 </body>
 </html>";
-        }
-
-        // ==================== APP JS (served at /js/app.js) ====================
-        // FIX: app.js is now served from here so no external file dependency is needed.
-        //      loadDashboard now injects dashboard HTML into content div before fetching,
-        //      ensuring stat element IDs always exist when the fetch callback fires.
-        public static string GetAppJs()
-        {
-            return @"
-var currentTable = null;
-var allCustomers = [];
-
-function loadPage(page, el) {
-    if (el) {
-        document.querySelectorAll('.nav-link').forEach(function(e) { e.classList.remove('active'); });
-        el.classList.add('active');
-    }
-    var c = document.getElementById('content');
-
-    if (page === 'dashboard') { loadDashboard(c); }
-    else if (page === 'customers') { loadCustomers(c); }
-    else if (page === 'debits') { loadDebits(c); }
-    else if (page === 'recoveries') { loadRecoveries(c); }
-}
-
-// FIX: Dashboard HTML is now injected first so getElementById calls in the
-//      fetch callback always find the stat elements in the DOM.
-function loadDashboard(c) {
-    c.innerHTML = '<div class=""container-fluid"">' +
-        '<h3 class=""mb-4"">&#x1F4C8; Dashboard</h3>' +
-        '<div class=""row g-3"">' +
-        '<div class=""col-md-3""><div class=""card stat-card bg-primary text-white p-3""><h6>Total Customers</h6><h2 id=""statCustomers"">...</h2></div></div>' +
-        '<div class=""col-md-3""><div class=""card stat-card bg-danger text-white p-3""><h6>Total Debit</h6><h2 id=""statDebit"">...</h2></div></div>' +
-        '<div class=""col-md-3""><div class=""card stat-card bg-success text-white p-3""><h6>Total Recovery</h6><h2 id=""statRecovery"">...</h2></div></div>' +
-        '<div class=""col-md-3""><div class=""card stat-card bg-warning text-dark p-3""><h6>Outstanding</h6><h2 id=""statOutstanding"">...</h2></div></div>' +
-        '</div></div>';
-
-    fetch('/api/dashboard').then(function(r) { return r.json(); }).then(function(d) {
-        if (d.error) {
-            c.innerHTML = '<div class=""alert alert-danger"">Error: ' + d.error + '</div>';
-            return;
-        }
-        document.getElementById('statCustomers').innerText = d.customers;
-        document.getElementById('statDebit').innerText = 'Rs. ' + parseFloat(d.totalDebit).toFixed(2);
-        document.getElementById('statRecovery').innerText = 'Rs. ' + parseFloat(d.totalRecovery).toFixed(2);
-        document.getElementById('statOutstanding').innerText = 'Rs. ' + parseFloat(d.outstanding).toFixed(2);
-    }).catch(function(err) {
-        c.innerHTML = '<div class=""alert alert-danger"">Error loading dashboard: ' + err + '</div>';
-    });
-}
-
-function loadCustomers(c) {
-    c.innerHTML = '<div class=""container-fluid""><div class=""d-flex justify-content-between align-items-center mb-4""><h3>&#x1F465; Customers</h3><button class=""btn btn-primary"" onclick=""showAddCustomer()"">+ Add New Customer</button></div><div class=""card""><div class=""card-body""><table id=""customersTable"" class=""table table-striped table-bordered"" style=""width:100%""><thead class=""table-dark""><tr><th>Code</th><th>Name</th><th>Mobile</th><th>City</th><th>Balance</th><th>Actions</th></tr></thead><tbody></tbody></table></div></div></div>';
-
-    fetch('/api/customers').then(function(r) { return r.json(); }).then(function(data) {
-        if (data.error) { alert('Error: ' + data.error); return; }
-        allCustomers = data;
-        var tb = $('#customersTable tbody');
-        tb.empty();
-        data.forEach(function(x) {
-            var cls = x.CurrentBalance > 0 ? 'text-danger fw-bold' : 'text-success';
-            var row = '<tr>';
-            row += '<td>' + x.CustomerCode + '</td>';
-            row += '<td>' + x.CustomerName + '</td>';
-            row += '<td>' + x.Mobile + '</td>';
-            row += '<td>' + x.City + '</td>';
-            row += '<td class=""' + cls + '"">Rs. ' + parseFloat(x.CurrentBalance).toFixed(2) + '</td>';
-            row += '<td><button class=""btn btn-sm btn-info"" onclick=""showLedger(' + x.CustomerID + ')"">Ledger</button></td>';
-            row += '</tr>';
-            tb.append(row);
-        });
-        if (currentTable) { currentTable.destroy(); currentTable = null; }
-        currentTable = $('#customersTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
-    }).catch(function(err) {
-        alert('Error loading customers: ' + err);
-    });
-}
-
-function showAddCustomer() {
-    var code = prompt('Customer Code:');
-    if (!code) return;
-    var name = prompt('Customer Name:');
-    if (!name) return;
-    var mob = prompt('Mobile:') || '';
-    var city = prompt('City:') || '';
-
-    fetch('/api/customers', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ CustomerCode: code, CustomerName: name, Mobile: mob, City: city, OpeningBalance: 0 })
-    }).then(function(r) { return r.json(); }).then(function(res) {
-        if (res.success) {
-            alert('Customer added successfully!');
-            loadPage('customers', document.querySelectorAll('.nav-link')[1]);
-        } else {
-            alert('Error: ' + res.message);
-        }
-    }).catch(function(err) { alert('Error: ' + err); });
-}
-
-function loadDebits(c) {
-    c.innerHTML = '<div class=""container-fluid""><div class=""d-flex justify-content-between align-items-center mb-4""><h3>&#x1F4B0; Debit Entries (Udhaar)</h3><button class=""btn btn-primary"" onclick=""showAddDebit()"">+ New Debit Entry</button></div><div class=""card""><div class=""card-body""><table id=""debitsTable"" class=""table table-striped table-bordered"" style=""width:100%""><thead class=""table-dark""><tr><th>Date</th><th>Customer</th><th>Invoice #</th><th>Amount</th><th>Description</th></tr></thead><tbody></tbody></table></div></div></div>';
-
-    fetch('/api/debits').then(function(r) { return r.json(); }).then(function(data) {
-        if (data.error) { alert('Error: ' + data.error); return; }
-        var tb = $('#debitsTable tbody');
-        tb.empty();
-        data.forEach(function(x) {
-            var row = '<tr>';
-            row += '<td>' + x.DebitDate + '</td>';
-            row += '<td>' + x.CustomerName + '</td>';
-            row += '<td>' + x.InvoiceNumber + '</td>';
-            row += '<td>Rs. ' + parseFloat(x.Amount).toFixed(2) + '</td>';
-            row += '<td>' + x.Description + '</td>';
-            row += '</tr>';
-            tb.append(row);
-        });
-        if (currentTable) { currentTable.destroy(); currentTable = null; }
-        currentTable = $('#debitsTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
-    }).catch(function(err) { alert('Error loading debits: ' + err); });
-}
-
-function showAddDebit() {
-    if (allCustomers.length === 0) { alert('No customers! Add customer first.'); return; }
-    var custList = allCustomers.map(function(x, i) { return (i+1) + '. ' + x.CustomerName + ' (Bal: Rs.' + parseFloat(x.CurrentBalance).toFixed(2) + ')'; }).join('\n');
-    var custNum = prompt('Select Customer:\n' + custList + '\n\nEnter number:');
-    if (!custNum) return;
-    var idx = parseInt(custNum) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= allCustomers.length) { alert('Invalid selection!'); return; }
-    var cust = allCustomers[idx];
-    var inv = prompt('Invoice Number:') || '';
-    var amt = prompt('Amount:');
-    // FIX: Validate that amount is a positive number before submitting
-    if (!amt || isNaN(parseFloat(amt)) || parseFloat(amt) <= 0) { alert('Invalid amount!'); return; }
-    var desc = prompt('Description:') || '';
-
-    fetch('/api/debits', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ CustomerID: cust.CustomerID, InvoiceNumber: inv, Amount: amt, Description: desc })
-    }).then(function(r) { return r.json(); }).then(function(res) {
-        if (res.success) {
-            alert('Debit added successfully!');
-            loadPage('debits', document.querySelectorAll('.nav-link')[2]);
-        } else {
-            alert('Error: ' + res.message);
-        }
-    }).catch(function(err) { alert('Error: ' + err); });
-}
-
-function loadRecoveries(c) {
-    c.innerHTML = '<div class=""container-fluid""><div class=""d-flex justify-content-between align-items-center mb-4""><h3>&#x1F4B5; Recovery Entries (Vasooli)</h3><button class=""btn btn-primary"" onclick=""showAddRecovery()"">+ New Recovery Entry</button></div><div class=""card""><div class=""card-body""><table id=""recoveriesTable"" class=""table table-striped table-bordered"" style=""width:100%""><thead class=""table-dark""><tr><th>Date</th><th>Customer</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead><tbody></tbody></table></div></div></div>';
-
-    fetch('/api/recoveries').then(function(r) { return r.json(); }).then(function(data) {
-        if (data.error) { alert('Error: ' + data.error); return; }
-        var tb = $('#recoveriesTable tbody');
-        tb.empty();
-        data.forEach(function(x) {
-            var row = '<tr>';
-            row += '<td>' + x.RecoveryDate + '</td>';
-            row += '<td>' + x.CustomerName + '</td>';
-            row += '<td>Rs. ' + parseFloat(x.AmountReceived).toFixed(2) + '</td>';
-            row += '<td>' + x.PaymentMethod + '</td>';
-            row += '<td>' + x.ReferenceNumber + '</td>';
-            row += '</tr>';
-            tb.append(row);
-        });
-        if (currentTable) { currentTable.destroy(); currentTable = null; }
-        currentTable = $('#recoveriesTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
-    }).catch(function(err) { alert('Error loading recoveries: ' + err); });
-}
-
-function showAddRecovery() {
-    if (allCustomers.length === 0) { alert('No customers!'); return; }
-    var custList = allCustomers.map(function(x, i) { return (i+1) + '. ' + x.CustomerName; }).join('\n');
-    var custNum = prompt('Select Customer:\n' + custList + '\n\nEnter number:');
-    if (!custNum) return;
-    var idx = parseInt(custNum) - 1;
-    if (isNaN(idx) || idx < 0 || idx >= allCustomers.length) { alert('Invalid selection!'); return; }
-    var cust = allCustomers[idx];
-    var amt = prompt('Amount Received:');
-    // FIX: Validate that amount is a positive number before submitting
-    if (!amt || isNaN(parseFloat(amt)) || parseFloat(amt) <= 0) { alert('Invalid amount!'); return; }
-    var method = prompt('Payment Method (Cash/Bank/Cheque/Easypaisa/JazzCash):', 'Cash') || 'Cash';
-    var ref = prompt('Reference Number:') || '';
-
-    fetch('/api/recoveries', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ CustomerID: cust.CustomerID, AmountReceived: amt, PaymentMethod: method, ReferenceNumber: ref, Remarks: '' })
-    }).then(function(r) { return r.json(); }).then(function(res) {
-        if (res.success) {
-            alert('Recovery added successfully!');
-            loadPage('recoveries', document.querySelectorAll('.nav-link')[3]);
-        } else {
-            alert('Error: ' + res.message);
-        }
-    }).catch(function(err) { alert('Error: ' + err); });
-}
-
-function showLedger(cid) {
-    fetch('/api/ledger?customerID=' + cid).then(function(r) { return r.json(); }).then(function(data) {
-        if (data.error) { alert('Error: ' + data.error); return; }
-        var html = '<h5>Customer Ledger</h5>';
-        html += '<table class=""table table-sm table-bordered""><thead class=""table-light""><tr><th>Date</th><th>Type</th><th>Description</th><th>Debit</th><th>Credit</th><th>Balance</th></tr></thead><tbody>';
-        data.forEach(function(x) {
-            html += '<tr>';
-            html += '<td>' + x.TransactionDate + '</td>';
-            html += '<td>' + x.VoucherType + '</td>';
-            html += '<td>' + x.Description + '</td>';
-            html += '<td>' + (x.DebitAmount > 0 ? 'Rs. ' + parseFloat(x.DebitAmount).toFixed(2) : '-') + '</td>';
-            html += '<td>' + (x.CreditAmount > 0 ? 'Rs. ' + parseFloat(x.CreditAmount).toFixed(2) : '-') + '</td>';
-            html += '<td><strong>Rs. ' + parseFloat(x.RunningBalance).toFixed(2) + '</strong></td>';
-            html += '</tr>';
-        });
-        html += '</tbody></table>';
-        var w = window.open('', '_blank', 'width=800,height=600');
-        w.document.write('<html><head><title>Customer Ledger</title><link href=""https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"" rel=""stylesheet""></head><body><div class=""p-4"">' + html + '</div></body></html>');
-        w.document.close();
-    }).catch(function(err) { alert('Error loading ledger: ' + err); });
-}
-
-// Initialize
-window.onload = function() {
-    fetch('/api/customers').then(function(r) {
-        if (r.ok) return r.json();
-        return [];
-    }).then(function(d) {
-        allCustomers = Array.isArray(d) ? d : [];
-    }).catch(function() { allCustomers = []; });
-
-    loadPage('dashboard', document.querySelector('.nav-link'));
-};
-";
         }
     }
 }
