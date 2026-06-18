@@ -8,6 +8,7 @@ using System.Threading;
 using System.Web.Script.Serialization;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 
 namespace Khatify
 {
@@ -15,6 +16,20 @@ namespace Khatify
     {
         public static string connStr = "";
         public static JavaScriptSerializer json = new JavaScriptSerializer();
+        
+        public static string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
 
         static void Main(string[] args)
         {
@@ -116,7 +131,7 @@ namespace Khatify
                         CREATE TABLE CustomerLedger (LedgerID INT IDENTITY(1,1) PRIMARY KEY, CustomerID INT FOREIGN KEY REFERENCES Customers(CustomerID), TransactionDate DATETIME NOT NULL, VoucherType NVARCHAR(20), ReferenceID INT, Description NVARCHAR(250), DebitAmount DECIMAL(18,2) DEFAULT 0, CreditAmount DECIMAL(18,2) DEFAULT 0, RunningBalance DECIMAL(18,2) DEFAULT 0, CreatedDate DATETIME DEFAULT GETDATE());
                         
                         IF NOT EXISTS (SELECT * FROM Users WHERE Username='admin')
-                        INSERT INTO Users (Username, Password, Role) VALUES ('admin', 'admin123', 'Admin');
+                        INSERT INTO Users (Username, Password, Role) VALUES ('admin', '" + HashPassword("admin123") + "', 'Admin');
                     ";
                     new SqlCommand(sql, conn).ExecuteNonQuery();
                     Console.WriteLine("  Database tables created successfully!");
@@ -167,6 +182,7 @@ namespace Khatify
                 else if (path == "/api/dashboard") Apis.ApiDashboard(ctx);
                 else if (path == "/api/customers" && ctx.Request.HttpMethod == "GET") Apis.ApiGetCustomers(ctx);
                 else if (path == "/api/customers" && ctx.Request.HttpMethod == "POST") Apis.ApiAddCustomer(ctx);
+                else if (path == "/api/customers/delete" && ctx.Request.HttpMethod == "POST") Apis.ApiDeleteCustomer(ctx);
                 else if (path == "/api/customers/close" && ctx.Request.HttpMethod == "POST") Apis.ApiCloseCustomer(ctx);
                 else if (path == "/api/customers/reopen" && ctx.Request.HttpMethod == "POST") Apis.ApiReopenCustomer(ctx);
                 else if (path == "/api/closed-customers" && ctx.Request.HttpMethod == "GET") Apis.ApiGetClosedCustomers(ctx);
