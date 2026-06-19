@@ -111,24 +111,32 @@ function loadCustomers(c) {
     fetch('/api/customers').then(r => r.json()).then(data => {
         if (data.error) { alert('Error: ' + data.error); return; }
         allCustomers = data;
-        var tb = $('#customersTable tbody'); tb.empty();
+        var tb = document.querySelector('#customersTable tbody'); 
+        if (!tb) { console.error('Table body not found'); return; }
+        tb.innerHTML = '';
         data.forEach(x => {
             var cls = x.CurrentBalance > 0 ? 'text-danger fw-bold' : 'text-success fw-bold';
+            var safeName = (x.CustomerName || '').replace(/'/g, "\\'");
             var row = `<tr>
-                <td><strong>${x.CustomerCode}</strong></td>
-                <td>${x.CustomerName}</td>
+                <td><strong>${x.CustomerCode || ''}</strong></td>
+                <td>${x.CustomerName || ''}</td>
                 <td>${x.Mobile || '-'}</td>
                 <td>${x.City || '-'}</td>
-                <td class="${cls}">Rs. ${parseFloat(x.CurrentBalance).toFixed(2)}</td>
+                <td class="${cls}">Rs. ${parseFloat(x.CurrentBalance || 0).toFixed(2)}</td>
                 <td>
                     <button class="btn btn-sm btn-info me-1" onclick="showLedger(${x.CustomerID})" title="View Ledger"><i class="fa-solid fa-book-open"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="showCloseKhataModal(${x.CustomerID}, '${x.CustomerName.replace(/'/g, "\\'")}')" title="Close Khata"><i class="fa-solid fa-xmark"></i> Close</button>
+                    <button class="btn btn-sm btn-warning me-1" onclick="showDeleteCustomerModal(${x.CustomerID}, '${safeName}')" title="Delete Customer"><i class="fa-solid fa-trash"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="showCloseKhataModal(${x.CustomerID}, '${safeName}')" title="Close Khata"><i class="fa-solid fa-xmark"></i> Close</button>
                 </td>
             </tr>`;
-            tb.append(row);
+            tb.innerHTML += row;
         });
-        if (currentTable) { currentTable.destroy(); }
-        currentTable = $('#customersTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
+        if (window.currentTable && typeof window.currentTable.destroy === 'function') { 
+            window.currentTable.destroy(); 
+        }
+        if ($.fn.DataTable) {
+            window.currentTable = $('#customersTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
+        }
     }).catch(err => alert('Error loading customers: ' + err));
 }
 
@@ -193,7 +201,7 @@ function showCloseKhataModal(id, name) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button> 
                 </div> 
                 <div class="modal-body"> 
-                    <p>Are you sure you want to close the khata for <strong>${name}</strong>?</p> 
+                    <p>Are you sure you want to close the khata for <strong>${name || 'this customer'}</strong>?</p> 
                     <div class="alert alert-warning small mb-0"><i class="fa-solid fa-circle-info me-1"></i> Once closed, this customer will move to "Closed Khatas" and will not appear in Active, Debit, or Recovery lists.</div> 
                 </div> 
                 <div class="modal-footer"> 
@@ -204,9 +212,11 @@ function showCloseKhataModal(id, name) {
         </div> 
     </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
-    var modal = new bootstrap.Modal(document.getElementById('closeModal'));
+    var modalEl = document.getElementById('closeModal');
+    if (!modalEl) { console.error('Modal element not found'); return; }
+    var modal = new bootstrap.Modal(modalEl);
     modal.show();
-    document.getElementById('closeModal').addEventListener('hidden.bs.modal', function () { this.remove(); });
+    modalEl.addEventListener('hidden.bs.modal', function () { this.remove(); });
 }
 
 function confirmCloseKhata(id) {
@@ -214,9 +224,50 @@ function confirmCloseKhata(id) {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ CustomerID: id })
     }).then(r => r.json()).then(res => {
-        bootstrap.Modal.getInstance(document.getElementById('closeModal')).hide();
+        var modalEl = document.getElementById('closeModal');
+        if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
         if(res.success) { alert('Khata closed successfully!'); loadPage('customers', document.querySelectorAll('.nav-link')[1]); }
-        else { alert('Error: ' + res.message); }
+        else { alert('Error: ' + (res.message || 'Unknown error')); }
+    }).catch(err => alert('Error: ' + err));
+}
+
+// NEW: Delete Customer Modal
+function showDeleteCustomerModal(id, name) {
+    var modalHtml = `<div class="modal fade" id="deleteCustomerModal" tabindex="-1"> 
+        <div class="modal-dialog"> 
+            <div class="modal-content"> 
+                <div class="modal-header bg-warning text-dark"> 
+                    <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Delete Customer Confirmation</h5> 
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button> 
+                </div> 
+                <div class="modal-body"> 
+                    <p>Are you sure you want to <strong>DELETE</strong> the customer <strong>${name || 'this customer'}</strong>?</p> 
+                    <div class="alert alert-danger small mb-0"><i class="fa-solid fa-circle-info me-1"></i> This action can only be performed if the customer has NO transactions. Otherwise, close the khata instead.</div> 
+                </div> 
+                <div class="modal-footer"> 
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button> 
+                    <button type="button" class="btn btn-warning" onclick="confirmDeleteCustomer(${id})"><i class="fa-solid fa-trash me-1"></i>Delete Customer</button> 
+                </div> 
+            </div> 
+        </div> 
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    var modalEl = document.getElementById('deleteCustomerModal');
+    if (!modalEl) { console.error('Modal element not found'); return; }
+    var modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.addEventListener('hidden.bs.modal', function () { this.remove(); });
+}
+
+function confirmDeleteCustomer(id) {
+    fetch('/api/customers/delete', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ CustomerID: id })
+    }).then(r => r.json()).then(res => {
+        var modalEl = document.getElementById('deleteCustomerModal');
+        if (modalEl) bootstrap.Modal.getInstance(modalEl).hide();
+        if(res.success) { alert('Customer deleted successfully!'); loadPage('customers', document.querySelectorAll('.nav-link')[1]); }
+        else { alert('Error: ' + (res.message || 'Unknown error')); }
     }).catch(err => alert('Error: ' + err));
 }
 
