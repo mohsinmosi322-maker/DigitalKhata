@@ -131,8 +131,7 @@ namespace Khatify
                         CREATE TABLE CustomerLedger (LedgerID INT IDENTITY(1,1) PRIMARY KEY, CustomerID INT FOREIGN KEY REFERENCES Customers(CustomerID), TransactionDate DATETIME NOT NULL, VoucherType NVARCHAR(20), ReferenceID INT, Description NVARCHAR(250), DebitAmount DECIMAL(18,2) DEFAULT 0, CreditAmount DECIMAL(18,2) DEFAULT 0, RunningBalance DECIMAL(18,2) DEFAULT 0, CreatedDate DATETIME DEFAULT GETDATE());
                         
                         IF NOT EXISTS (SELECT * FROM Users WHERE Username='admin')
-                        INSERT INTO Users (Username, Password, Role) VALUES ('admin', '" + HashPassword("admin123") + "', 'Admin');
-                    ";
+                        INSERT INTO Users (Username, Password, Role) VALUES ('admin', '" + HashPassword("admin123") + "', 'Admin');";
                     new SqlCommand(sql, conn).ExecuteNonQuery();
                     Console.WriteLine("  Database tables created successfully!");
                 }
