@@ -356,7 +356,7 @@ namespace Khatify
                         updCmd.Parameters.AddWithValue("@cid", customerID);
                         updCmd.ExecuteNonQuery();
                         
-                        decimal newBalance = (decimal)new SqlCommand("SELECT CurrentBalance FROM Customers WHERE CustomerID = @cid", conn, trans) { Parameters = { { "@cid", customerID } } }.ExecuteScalar();
+                        decimal newBalance = (decimal)new SqlCommand("SELECT CurrentBalance FROM Customers WHERE CustomerID = @cid", conn, trans) { Parameters = { AddWithValue("@cid", customerID) } }.ExecuteScalar();
                         
                         var ledCmd = new SqlCommand("INSERT INTO CustomerLedger (CustomerID, TransactionDate, VoucherType, ReferenceID, Description, DebitAmount, RunningBalance) VALUES (@cid, @date, 'Debit', @refid, @desc, @amt, @bal)", conn, trans);
                         ledCmd.Parameters.AddWithValue("@cid", customerID); 
@@ -370,7 +370,7 @@ namespace Khatify
                         trans.Commit();
                         Program.SendJson(ctx, new { success = true });
                     }
-                    catch (Exception ex) { 
+                    catch { 
                         trans.Rollback(); 
                         throw; 
                     }
@@ -452,7 +452,7 @@ namespace Khatify
                         updCmd.Parameters.AddWithValue("@cid", customerID);
                         updCmd.ExecuteNonQuery();
                         
-                        decimal newBalance = (decimal)new SqlCommand("SELECT CurrentBalance FROM Customers WHERE CustomerID = @cid", conn, trans) { Parameters = { { "@cid", customerID } } }.ExecuteScalar();
+                        decimal newBalance = (decimal)new SqlCommand("SELECT CurrentBalance FROM Customers WHERE CustomerID = @cid", conn, trans) { Parameters = { AddWithValue("@cid", customerID) } }.ExecuteScalar();
                         
                         var ledCmd = new SqlCommand("INSERT INTO CustomerLedger (CustomerID, TransactionDate, VoucherType, ReferenceID, Description, CreditAmount, RunningBalance) VALUES (@cid, @date, 'Recovery', @refid, @pm, @amt, @bal)", conn, trans);
                         ledCmd.Parameters.AddWithValue("@cid", customerID); 
@@ -466,7 +466,7 @@ namespace Khatify
                         trans.Commit();
                         Program.SendJson(ctx, new { success = true });
                     }
-                    catch (Exception ex) { 
+                    catch { 
                         trans.Rollback(); 
                         throw; 
                     }
